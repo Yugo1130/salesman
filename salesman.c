@@ -129,17 +129,15 @@ int two_opt(int *route){
 
 // UBを計算
 int calc_ub(){
-    int *route = (int*)malloc((n) * sizeof(int));
-
     // 貪欲法（最近傍法）で初期解を導出し
     // さらに2-opt法を適用することで，近似解を導出する．
-    greedy(route);
-    int cost = two_opt(route);
+    greedy(best_route);
+    int cost = two_opt(best_route);
 
-    free(route);
     return cost;
 }
 
+// 訪問済の端点である0とcurrent_nodeから未訪問集合につなぐ際の最小コストを導出
 int conect_u(int current_node, const bool *visited){
     int best_0 = INT_MAX;  // 端点0から未訪問集合U内の最短コスト
     int best_current = INT_MAX;  // 端点currentから未訪問集合U内の最短コスト
@@ -268,7 +266,7 @@ int calc_lb(int cost, int current_node, const bool *visited){
     // 最小全域木を作成し，コストを導出
     int cost_mst = mst(visited) + cost_conect_u;
 
-    // 各未訪問ノードに対して最短の2本を取る下界とMSTで得られた下界の最大値をLBとして使用する．
+    // 各未訪問ノードに対して最短の2本を取る下界とMSTで得られた下界の最大値をLBとして使用
     if(cost_min_two > cost_mst){
         cost += cost_min_two;
         calc_two++;
