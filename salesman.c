@@ -1,9 +1,11 @@
+// gcc salesman.c -o salesman
+// time ./salesman TSPmaps/gr24.tsp
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
 #include <limits.h>
-#include <unistd.h>
 
 int n;  // 都市数
 int **w;  // データ格納用
@@ -344,7 +346,7 @@ int main(int argc, char* argv[]) {
     }
     printf("0\n");
 
-    printf("two: %d, mst: %d", calc_two, calc_mst);
+    printf("two: %d, mst: %d\n", calc_two, calc_mst);
 
     for (int i = 0; i < n; ++i) free(w[i]);
     free(w);
