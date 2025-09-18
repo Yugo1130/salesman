@@ -443,6 +443,12 @@ int main(int argc, char* argv[]) {
         int num_term_processes = 0;
         bool processing = true;
         int temp;
+
+        // 既に終了しているプロセスにsendを行わないためのフラグ
+        bool *active_process = calloc(size, sizeof(bool));
+        for(int i = 0; i < size; i++){
+            active_process[i] = true;
+        }
         
         while(processing){
             MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &flag, &status);
@@ -454,13 +460,13 @@ int main(int argc, char* argv[]) {
                             MPI_Send(&task_num, 1, MPI_INT, status.MPI_SOURCE, TAG_TASK, MPI_COMM_WORLD);
                             task_num++;
                         } else{  // 処理すべきタスクが残っていない場合は終了通知を送信
+                            active_process[status.MPI_SOURCE] = false;  
                             MPI_Send(&temp, 1, MPI_INT, status.MPI_SOURCE, TAG_TERM, MPI_COMM_WORLD);
                             num_term_processes++;
                         }
                         if(num_term_processes >= size - 1){  // すべてのプロセスに終了通知を送ったらwhileから抜ける
                             processing = false;
                         }
-                        // printf("rank0: %d\n", num_term_processes);
                         break;
                     }
                     case TAG_UB:{ // UB更新
@@ -471,6 +477,7 @@ int main(int argc, char* argv[]) {
                             ub = latest_ub;
                             // すべてのrankにお知らせ
                             for(int dest = 1; dest < size; dest++){
+                                if (!active_process[dest]) continue;  // 既に終了しているプロセスには送らない
                                 MPI_Isend(&ub, 1, MPI_INT, dest, TAG_UB, MPI_COMM_WORLD, &request);
                             }
                             memcpy(best_route, &buf[1], n * sizeof(int));
@@ -509,6 +516,14 @@ int main(int argc, char* argv[]) {
                     case TAG_TERM:{
                         MPI_Recv(&temp, 1, MPI_INT, 0, TAG_TERM, MPI_COMM_WORLD, &status);
                         processing = false;
+                        break;
+                    }
+                    case TAG_UB:{  // dfs中以外にubの更新が入った場合はここで受け取る
+                        int latest_ub;
+                        MPI_Recv(&latest_ub, 1, MPI_INT, 0, TAG_UB, MPI_COMM_WORLD, &status);
+                        if (latest_ub < ub){
+                            ub = latest_ub;
+                        }
                         break;
                     }
                 }
