@@ -476,19 +476,27 @@ int main(int argc, char* argv[]) {
                         int latest_ub = buf[0];
                         if(latest_ub < ub){
                             ub = latest_ub;
-                            // すべてのrankにお知らせ
+                            int m = 0;
+                            MPI_Request *requests = (MPI_Request*)malloc(sizeof(MPI_Request) * (size-1));
+                            // すべてのrankに最新ubをお知らせ
+                            // 受信する順番が不確定であるため，bcastは使用しない
                             for(int dest = 1; dest < size; dest++){
                                 if (!active_process[dest]) continue;  // 既に終了しているプロセスには送らない
-                                MPI_Isend(&ub, 1, MPI_INT, dest, TAG_UB, MPI_COMM_WORLD, &request);
+                                MPI_Isend(&ub, 1, MPI_INT, dest, TAG_UB, MPI_COMM_WORLD, &requests[m++]);
                             }
+                            if (m > 0){
+                                MPI_Waitall(m, requests, MPI_STATUSES_IGNORE);
+                            }
+                            free(requests);
                             memcpy(best_route, &buf[1], n * sizeof(int));
                         }
+                        free(buf);
                         break;
                     }
                 }
             }
-
         }
+        free(active_process);
         
     } else {
         int flag;
@@ -547,6 +555,7 @@ int main(int argc, char* argv[]) {
     free(current_route);
     for (int i = 0; i < task_size; ++i) free(tasks[i].route);
     free(tasks);
+    free(visited);
     MPI_Finalize();
     return 0;
 }
