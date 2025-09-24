@@ -336,6 +336,7 @@ void dfs(int step, int cost, int current_node) {
             buf[0] = ub;
             memcpy(buf + 1, current_route, n * sizeof(int));
             // ubが更新されたらrank0に送信
+            // 直後にバッファの開放を行うため，ブロッキング通信にしている
             MPI_Send(buf, n + 1, MPI_INT, 0, TAG_UB, MPI_COMM_WORLD);
             free(buf);
         }
